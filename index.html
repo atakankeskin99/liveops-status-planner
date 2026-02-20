@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Status Planner</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Status Planner</h1>
+      <p class="muted">Slot bazlı katılım + otomatik statü atama (API yok, local)</p>
+    </div>
+
+    <div class="actions">
+      <button id="btnSelectAllSlots" class="btn">Tüm slotları herkese aç</button>
+      <button id="btnClearAllSlots" class="btn btnGhost">Tüm slotları kapat</button>
+      <button id="btnGenerate" class="btn btnPrimary">Plan Üret</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <div class="cardHeader">
+        <h2>Katılım Tablosu</h2>
+        <p class="muted">Kişi × Slot checkbox. (Boşluklar “o slotta yok” demek)</p>
+      </div>
+
+      <div class="tableWrap">
+        <table id="attendanceTable"></table>
+      </div>
+
+      <div class="hint">
+        <strong>İpucu:</strong> Gün gün değişen vardiya için sadece checkbox’ları güncellersin.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardHeader">
+        <h2>Slot Statüleri</h2>
+        <p class="muted">Her slot için statüleri buraya yapıştır. (Satır satır)</p>
+      </div>
+
+      <div id="slotEditors" class="slotEditors"></div>
+
+      <details class="cardSub">
+        <summary>Statü formatı</summary>
+        <pre class="code">Hemen- Kurye Teslim Aldı& Yolda (Batı Akdeniz)
+Yemek- Kurye Mağazada (İstanbul)
+Hemen- Adreste& Atandı (Güney-Kuzey Ege)</pre>
+        <p class="muted">
+          Not: “Güney-Kuzey Ege” yazımı otomatik olarak <em>Ege (Kuzey+Güney)</em> bundle sayılır.
+        </p>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="cardHeader">
+        <h2>Üretilen Plan</h2>
+        <p class="muted">Plan üretince aşağıya düşer. (Export da ekleriz)</p>
+      </div>
+      <div class="tableWrap">
+        <table id="planTable"></table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Unassigned Modal -->
+  <div id="modalBackdrop" class="modalBackdrop hidden"></div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Statü Fazlası</h3>
+    <p id="modalText" class="muted"></p>
+    <div class="modalBody">
+      <ul id="modalList"></ul>
+    </div>
+    <div class="modalActions">
+      <button id="btnModalOk" class="btn btnPrimary">Tamam (Boş Bırak)</button>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
