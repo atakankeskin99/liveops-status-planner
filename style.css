@@ -1,5 +1,5 @@
 /* =========================================================
-   LiveOps Statü Planlayıcısı — style.css (FULL)
+   Slotwise Status Planner — style.css (FULL)
    Default theme = "gray"
    Optional themes: <html data-theme="light"> / "dark"
    ========================================================= */
@@ -502,4 +502,5 @@ tbody td:not(:first-child) {
   .topbar { padding: 14px 12px; }
   .btn { width: 100%; justify-content: center; }
   .actions { flex-direction: column; align-items: stretch; }
+
 }
