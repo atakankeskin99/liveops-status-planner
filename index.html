@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Status Planner</title>
+  <title>LiveOps Statü Planlayıcısı</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <h1>Status Planner</h1>
-      <p class="muted">Slot bazlı katılım + otomatik statü atama (API yok, local)</p>
+      <h1>LiveOps Statü Planlayıcısı</h1>
+      <!-- alt açıklama kaldırıldı -->
     </div>
 
     <div class="actions">
@@ -24,22 +24,20 @@
     <section class="card">
       <div class="cardHeader">
         <h2>Katılım Tablosu</h2>
-        <p class="muted">Kişi × Slot checkbox. (Boşluklar “o slotta yok” demek)</p>
+        <!-- açıklama kaldırıldı -->
       </div>
 
       <div class="tableWrap">
         <table id="attendanceTable"></table>
       </div>
 
-      <div class="hint">
-        <strong>İpucu:</strong> Gün gün değişen vardiya için sadece checkbox’ları güncellersin.
-      </div>
+      <!-- ipucu kaldırıldı -->
     </section>
 
     <section class="card">
       <div class="cardHeader">
         <h2>Slot Statüleri</h2>
-        <p class="muted">Her slot için statüleri buraya yapıştır. (Satır satır)</p>
+        <!-- açıklama kaldırıldı -->
       </div>
 
       <div id="slotEditors" class="slotEditors"></div>
@@ -49,16 +47,13 @@
         <pre class="code">Hemen- Kurye Teslim Aldı& Yolda (Batı Akdeniz)
 Yemek- Kurye Mağazada (İstanbul)
 Hemen- Adreste& Atandı (Güney-Kuzey Ege)</pre>
-        <p class="muted">
-          Not: “Güney-Kuzey Ege” yazımı otomatik olarak <em>Ege (Kuzey+Güney)</em> bundle sayılır.
-        </p>
       </details>
     </section>
 
     <section class="card">
       <div class="cardHeader">
         <h2>Üretilen Plan</h2>
-        <p class="muted">Plan üretince aşağıya düşer. (Export da ekleriz)</p>
+        <!-- açıklama kaldırıldı -->
       </div>
       <div class="tableWrap">
         <table id="planTable"></table>

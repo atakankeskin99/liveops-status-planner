@@ -47,6 +47,54 @@ const SLOTS = [
   { id: "2231-0030", start: "22:31", end: "00:30", mode: "NIGHT_SPLIT", crossesMidnight: true },
 ];
 
+
+const SHIFT_PRESETS = [
+  { id: "custom", label: "— Shift seç —", slotIds: [] },
+
+  // Net slot sınırına oturanlar
+  { id: "0900-1900", label: "09:00 - 19:00", slotIds: [
+    "0900-1030","1030-1230","1231-1400","1401-1530","1531-1730","1731-1900"
+  ]},
+  { id: "1030-2030", label: "10:30 - 20:30", slotIds: [
+    "1030-1230","1231-1400","1401-1530","1531-1730","1731-1900","1901-2030"
+  ]},
+  { id: "1230-2230", label: "12:30 - 22:30", slotIds: [
+    "1231-1400","1401-1530","1531-1730","1731-1900","1901-2030","2031-2230"
+  ]},
+  { id: "1400-0030", label: "14:00 - 00:30", slotIds: [
+    "1401-1530","1531-1730","1731-1900","1901-2030","2031-2230","2231-0030"
+  ]},
+
+  // Yuvarlananlar (slot mantığına uygun, kullanıcıya kolay)
+  { id: "1130-2130", label: "11:30 - 21:30", slotIds: [
+    "1231-1400","1401-1530","1531-1730","1731-1900","1901-2030","2031-2230"
+  ]},
+  { id: "1300-0000", label: "13:00 - 00:00", slotIds: [
+    "1401-1530","1531-1730","1731-1900","1901-2030","2031-2230","2231-0030"
+  ]},
+
+  // ÖZEL KURAL: UI 18:30 dese de checkbox’ta 19:00’a kadar işaretli
+  { id: "0830-1830", label: "08:30 - 18:30", slotIds: [
+    "0830-0900","0900-1030","1030-1230","1231-1400","1401-1530","1531-1730","1731-1900"
+  ]},
+];
+
+function applyShiftPreset(employeeName, presetId) {
+  const preset = SHIFT_PRESETS.find(p => p.id === presetId);
+  if (!preset) return;
+
+  // Önce hepsini kapat
+  for (const s of SLOTS) state.attendance[employeeName][s.id] = false;
+
+  // Sonra preset slotlarını aç
+  for (const slotId of preset.slotIds) {
+    if (state.attendance[employeeName][slotId] !== undefined) {
+      state.attendance[employeeName][slotId] = true;
+    }
+  }
+}
+
+
 const MAX_STREAK = 3;
 
 // -----------------------------
@@ -177,7 +225,8 @@ function openModal({ text, items }) {
 // attendance state: employeeId -> slotId -> boolean
 const state = {
   attendance: {},
-  slotText: {}, // slotId -> textarea value
+  slotText: {},
+  shiftPreset: {},   // ✅ ekle
 };
 
 // initialize state
@@ -209,10 +258,44 @@ function renderAttendanceTable() {
 
   for (const name of EMPLOYEES) {
     const tr = document.createElement("tr");
+
+    // ✅ İsim + dropdown hücresi
     const tdName = document.createElement("td");
-    tdName.innerHTML = `<div class="cellCol"><span>${name}</span><small></small></div>`;
+    tdName.innerHTML = `
+      <div class="cellCol" style="gap:10px; justify-content:flex-start;">
+        <div style="min-width:170px;">
+          <div><strong>${name}</strong></div>
+          <div class="muted" style="margin-top:4px;">Shift seç → otomatik işaretle</div>
+        </div>
+
+        <select class="shiftSelect">
+          ${SHIFT_PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join("")}
+        </select>
+      </div>
+    `;
+
+    // ✅ Event binding
+    const select = tdName.querySelector(".shiftSelect");
+
+// 🔹 render sonrası dropdown eski seçimi korusun
+select.value = state.shiftPreset[name] || "custom";
+
+select.addEventListener("change", () => {
+  const presetId = select.value;
+
+  if (presetId === "custom") {
+    delete state.shiftPreset[name];   // custom = kaydı sil, manuel moda dön
+    return;
+  }
+
+  state.shiftPreset[name] = presetId;
+  applyShiftPreset(name, presetId);
+  renderAttendanceTable();
+});
+
     tr.appendChild(tdName);
 
+    // ✅ Checkbox hücreleri
     for (const s of SLOTS) {
       const td = document.createElement("td");
 
@@ -220,8 +303,10 @@ function renderAttendanceTable() {
       cb.type = "checkbox";
       cb.checked = !!state.attendance[name][s.id];
       cb.onchange = () => {
-        state.attendance[name][s.id] = cb.checked;
-      };
+  state.attendance[name][s.id] = cb.checked;
+  delete state.shiftPreset[name];  
+  renderAttendanceTable();          
+};
 
       td.appendChild(cb);
       tr.appendChild(td);
@@ -363,6 +448,27 @@ function pickBestEmployee(candidates, stats, status, alreadyAssignedThisSlot) {
   return best;
 }
 
+function pickBestEmployeeRelaxed(candidates, stats, status, alreadyAssignedThisSlot) {
+  // streak kuralını görmezden gelen SON ÇARE seçim
+  let best = null;
+  let bestScore = Infinity;
+
+  for (const name of candidates) {
+    if (alreadyAssignedThisSlot.has(name)) continue;
+
+    const st = stats[name];
+    const sc = scoreCandidate(st, status) + 1000; // büyük ceza
+
+    if (sc < bestScore) {
+      bestScore = sc;
+      best = name;
+    }
+  }
+
+  return best;
+}
+
+
 function formatNightCell(type) {
   // type: "HEMEN_ALL" | "YEMEK_ALL"
   return type === "HEMEN_ALL" ? "TÜM HEMEN" : "TÜM YEMEK";
@@ -450,21 +556,35 @@ btnGenerate.addEventListener("click", async () => {
       });
     }
 
-    const assignable = statuses.slice(0, active.length);
-    const alreadyAssignedThisSlot = new Set();
+   // 1) Statü azsa: cycle ile aktif kişi sayısına tamamla
+const assignable = [];
+for (let i = 0; i < active.length; i++) {
+  assignable.push(statuses[i % statuses.length]);
+}
 
-    for (const status of assignable) {
-      const emp = pickBestEmployee(active, stats, status, alreadyAssignedThisSlot);
+const alreadyAssignedThisSlot = new Set();
 
-      if (!emp) {
-        // hiç uygun yoksa boş bırak (hard constraint yüzünden olabilir)
-        continue;
-      }
+for (const status of assignable) {
+  // 2) Önce normal seçim (streak kuralına uyarak)
+  let emp = pickBestEmployee(active, stats, status, alreadyAssignedThisSlot);
 
-      plan[emp][slot.id] = status.label;
-      alreadyAssignedThisSlot.add(emp);
-      applyAssignment(stats[emp], status);
-    }
+  // 3) Uygun kimse yoksa: relaxed seçim (streak'i esneterek) -> boş bırakma yok
+  let violated = false;
+  if (!emp) {
+    emp = pickBestEmployeeRelaxed(active, stats, status, alreadyAssignedThisSlot);
+    violated = true;
+  }
+
+  // 4) Gerçekten hiç aday yoksa (çok uç): o statüyü "UNASSIGNED" say
+  // Bu genelde ancak active listesi boşsa olur.
+  if (!emp) {
+    continue;
+  }
+
+  plan[emp][slot.id] = violated ? `⚠ ${status.label}` : status.label;
+  alreadyAssignedThisSlot.add(emp);
+  applyAssignment(stats[emp], status);
+}
   }
 
   renderPlanTable(plan);
@@ -507,5 +627,4 @@ function renderPlanTable(plan) {
 
 // initial render
 renderAttendanceTable();
-
 renderSlotEditors();
